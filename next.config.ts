@@ -8,10 +8,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    outputFileTracingIncludes: {
-      '/api/**': ['./prisma/**'],
-    },
+  outputFileTracingIncludes: {
+    '/api/**': ['./prisma/**'],
   },
 };
 
