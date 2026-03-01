@@ -87,12 +87,14 @@ export async function searchStaff(filters: SearchFilters) {
         }
 
         // Check tools
-        const toolMatch = empTools.find((t: string) =>
-          t.toLowerCase().includes(lowerKeyword)
-        );
+        const toolMatch = empTools.find((t: any) => {
+          const toolName = typeof t === 'string' ? t : t.name;
+          return toolName && toolName.toLowerCase().includes(lowerKeyword);
+        });
         if (toolMatch) {
           matchScore += 0.2;
-          matchedSkills.push(toolMatch);
+          const toolName = typeof toolMatch === 'string' ? toolMatch : toolMatch.name;
+          matchedSkills.push(toolName);
         }
 
         // Check certs
