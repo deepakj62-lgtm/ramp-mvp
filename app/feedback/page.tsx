@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from 'react';
 
-const statusColors = {
-  new: 'bg-blue-100 text-blue-800',
-  triaged: 'bg-yellow-100 text-yellow-800',
-  accepted: 'bg-purple-100 text-purple-800',
-  in_progress: 'bg-indigo-100 text-indigo-800',
-  shipped: 'bg-green-100 text-green-800',
-  closed: 'bg-gray-100 text-gray-800',
-  rejected: 'bg-red-100 text-red-800',
+const statusColors: Record<string, string> = {
+  new: 'badge-sea',
+  triaged: 'badge-frost',
+  accepted: 'badge-jade',
+  in_progress: 'inline-block px-3 py-1 bg-leather/20 text-jade rounded text-sm font-medium',
+  shipped: 'inline-block px-3 py-1 bg-sea/30 text-jade rounded text-sm font-medium',
+  closed: 'inline-block px-3 py-1 bg-clay/40 text-jade/60 rounded text-sm font-medium',
+  rejected: 'badge-rust',
 };
 
 export default function FeedbackPage() {
-  const [tickets, setTickets] = useState([]);
-  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -64,19 +64,23 @@ export default function FeedbackPage() {
 
   const filteredTickets = filterStatus === 'all'
     ? tickets
-    : tickets.filter(t => t.status === filterStatus);
+    : tickets.filter((t: any) => t.status === filterStatus);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Ticket List */}
-      <div className="lg:col-span-1">
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Feedback Tickets</h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-heading font-bold text-jade mb-2">Feedback Board</h2>
+        <p className="text-jade/60 font-body">Review and manage user feedback tickets</p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Ticket List */}
+        <div className="lg:col-span-1">
+          <div className="space-y-4">
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-body text-jade focus:outline-none focus:ring-2 focus:ring-jade/40"
             >
               <option value="all">All Statuses</option>
               <option value="new">New</option>
@@ -87,110 +91,110 @@ export default function FeedbackPage() {
               <option value="closed">Closed</option>
               <option value="rejected">Rejected</option>
             </select>
-          </div>
 
-          {loading ? (
-            <div className="text-gray-600 text-sm">Loading...</div>
-          ) : filteredTickets.length === 0 ? (
-            <div className="text-gray-600 text-sm">No tickets found</div>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredTickets.map(ticket => (
-                <button
-                  key={ticket.id}
-                  onClick={() => setSelectedTicket(ticket)}
-                  className={`w-full text-left p-3 rounded border transition ${
-                    selectedTicket?.id === ticket.id
-                      ? 'bg-blue-50 border-blue-300'
-                      : 'bg-white border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <p className="font-medium text-sm text-gray-900 line-clamp-2">{ticket.title}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className={`text-xs px-2 py-1 rounded ${statusColors[ticket.status] || 'bg-gray-100'}`}>
-                      {ticket.status}
-                    </span>
-                    <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
-                      {ticket.type}
-                    </span>
+            {loading ? (
+              <div className="text-jade/50 text-sm font-body">Loading...</div>
+            ) : filteredTickets.length === 0 ? (
+              <div className="card p-6 text-center text-jade/50 text-sm font-body">No tickets found</div>
+            ) : (
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                {filteredTickets.map((ticket: any) => (
+                  <button
+                    key={ticket.id}
+                    onClick={() => setSelectedTicket(ticket)}
+                    className={`w-full text-left p-3 rounded-lg border transition font-body ${
+                      selectedTicket?.id === ticket.id
+                        ? 'bg-jade/5 border-jade/30'
+                        : 'bg-white border-gray-200 hover:border-jade/20 hover:bg-canvas'
+                    }`}
+                  >
+                    <p className="font-medium text-sm text-jade line-clamp-2">{ticket.title}</p>
+                    <div className="flex gap-2 mt-2">
+                      <span className={statusColors[ticket.status] || 'badge-frost'}>
+                        {ticket.status}
+                      </span>
+                      <span className="inline-block px-2 py-1 bg-canvas text-jade/60 rounded text-xs font-medium">
+                        {ticket.type}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Ticket Details */}
+        <div className="lg:col-span-2">
+          {selectedTicket ? (
+            <div className="card p-6 space-y-5">
+              <div>
+                <h3 className="text-xl font-heading font-bold text-jade">{selectedTicket.title}</h3>
+                <div className="flex gap-2 mt-3">
+                  <span className={statusColors[selectedTicket.status] || 'badge-frost'}>
+                    {selectedTicket.status}
+                  </span>
+                  <span className="inline-block px-2 py-1 bg-canvas text-jade/60 rounded text-xs font-medium">
+                    {selectedTicket.type}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <h4 className="font-heading font-semibold text-jade mb-2">Raw User Feedback</h4>
+                <p className="text-jade/70 text-sm font-body whitespace-pre-wrap">{selectedTicket.rawText}</p>
+              </div>
+
+              {selectedTicket.pageContext && (
+                <div className="border-t border-gray-100 pt-4">
+                  <h4 className="font-heading font-semibold text-jade mb-2">Page Context</h4>
+                  <p className="text-jade/70 text-sm font-body">{selectedTicket.pageContext}</p>
+                </div>
+              )}
+
+              {selectedTicket.structuredJson && (
+                <div className="border-t border-gray-100 pt-4">
+                  <h4 className="font-heading font-semibold text-jade mb-2">Structured Requirements</h4>
+                  <pre className="bg-canvas p-3 rounded-lg text-xs overflow-x-auto font-mono text-jade/80 border border-gray-100">
+                    {typeof selectedTicket.structuredJson === 'string'
+                      ? JSON.stringify(JSON.parse(selectedTicket.structuredJson), null, 2)
+                      : JSON.stringify(selectedTicket.structuredJson, null, 2)}
+                  </pre>
+                </div>
+              )}
+
+              {selectedTicket.chatTranscript && (
+                <div className="border-t border-gray-100 pt-4">
+                  <h4 className="font-heading font-semibold text-jade mb-2">Chat Transcript</h4>
+                  <div className="bg-canvas p-3 rounded-lg text-xs max-h-48 overflow-y-auto border border-gray-100">
+                    <pre className="whitespace-pre-wrap font-mono text-jade/80">{selectedTicket.chatTranscript}</pre>
                   </div>
-                </button>
-              ))}
+                </div>
+              )}
+
+              {selectedTicket.status === 'new' && (
+                <div className="border-t border-gray-100 pt-4 flex gap-3">
+                  <button
+                    onClick={() => handleApprove(selectedTicket.id)}
+                    className="btn-primary text-sm"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleReject(selectedTicket.id)}
+                    className="btn-accent text-sm"
+                  >
+                    Reject
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="card p-8 text-center text-jade/50 font-body">
+              Select a ticket to view details
             </div>
           )}
         </div>
-      </div>
-
-      {/* Ticket Details */}
-      <div className="lg:col-span-2">
-        {selectedTicket ? (
-          <div className="bg-white rounded-lg border p-6 space-y-4">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">{selectedTicket.title}</h3>
-              <div className="flex gap-2 mt-2">
-                <span className={`text-xs px-2 py-1 rounded font-medium ${statusColors[selectedTicket.status] || 'bg-gray-100'}`}>
-                  {selectedTicket.status}
-                </span>
-                <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 font-medium">
-                  {selectedTicket.type}
-                </span>
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Raw User Feedback</h4>
-              <p className="text-gray-600 text-sm whitespace-pre-wrap">{selectedTicket.rawText}</p>
-            </div>
-
-            {selectedTicket.pageContext && (
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Page Context</h4>
-                <p className="text-gray-600 text-sm">{selectedTicket.pageContext}</p>
-              </div>
-            )}
-
-            {selectedTicket.structuredJson && (
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Structured Requirements</h4>
-                <pre className="bg-gray-50 p-3 rounded text-xs overflow-x-auto">
-                  {typeof selectedTicket.structuredJson === 'string'
-                    ? JSON.stringify(JSON.parse(selectedTicket.structuredJson), null, 2)
-                    : JSON.stringify(selectedTicket.structuredJson, null, 2)}
-                </pre>
-              </div>
-            )}
-
-            {selectedTicket.chatTranscript && (
-              <div className="border-t pt-4">
-                <h4 className="font-semibold text-gray-900 mb-2">Chat Transcript</h4>
-                <div className="bg-gray-50 p-3 rounded text-xs max-h-48 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap">{selectedTicket.chatTranscript}</pre>
-                </div>
-              </div>
-            )}
-
-            {selectedTicket.status === 'new' && (
-              <div className="border-t pt-4 flex gap-2">
-                <button
-                  onClick={() => handleApprove(selectedTicket.id)}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium text-sm"
-                >
-                  ✓ Approve
-                </button>
-                <button
-                  onClick={() => handleReject(selectedTicket.id)}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium text-sm"
-                >
-                  ✗ Reject
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-600">
-            Select a ticket to view details
-          </div>
-        )}
       </div>
     </div>
   );

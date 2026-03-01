@@ -59,14 +59,14 @@ export default function SearchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Available Staff</h2>
-        <p className="text-gray-600">Search by skills, availability, and other criteria</p>
+        <h2 className="text-2xl font-heading font-bold text-jade mb-2">Find Available Staff</h2>
+        <p className="text-jade/60 font-body">Search by skills, availability, and other criteria</p>
       </div>
 
       <SearchFilters onSearch={handleSearch} loading={loading} />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+        <div className="bg-rust/10 border border-rust/30 rounded-lg p-4 text-rust font-body">
           {error}
         </div>
       )}
@@ -74,12 +74,12 @@ export default function SearchPage() {
       {results.length > 0 && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-600">Found {results.length} result{results.length !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-jade/60 font-body">Found {results.length} result{results.length !== 1 ? 's' : ''}</p>
             <button
               onClick={handleExport}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+              className="btn-secondary text-sm"
             >
-              📥 Export to CSV
+              Export to CSV
             </button>
           </div>
           <ResultsTable results={results} />
@@ -87,7 +87,7 @@ export default function SearchPage() {
       )}
 
       {!loading && results.length === 0 && !error && (
-        <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-600">
+        <div className="bg-canvas rounded-lg border border-gray-200 p-8 text-center text-jade/50 font-body">
           Enter search criteria above and click "Search" to find available staff
         </div>
       )}

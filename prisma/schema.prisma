@@ -10,11 +10,18 @@ datasource db {
 
 model Employee {
   id              String   @id @default(cuid())
-  name            String
-  nameAlt         String?  // Alternative name format for testing
-  level           String   // Associate, Consultant, Senior, Principal
-  location        String   // US or Canada
-  resumeText      String   // Long text
+  name            String   // "First Last"
+  rampName        String   // "Last, First" (RAMP display format)
+  email           String
+  companyGroup    String   // Linea Solutions | Linea Solutions ULC | Linea Secure | ICON
+  businessUnit    String   // Delivery | Cyber | Data
+  careerPath      String   // Consultant | Specialist
+  roleFamily      String   // BA | PM | TechAnalysis | Testing | Training | OCM | TechWriting | Data | Cyber
+  practice        String   // Pension | Insurance | WorkersComp | Benefits | CrossPractice
+  level           String   // Associate | Consultant | Senior | Principal
+  title           String   // Full title e.g. "Senior Consultant"
+  location        String   // US | Canada
+  resumeText      String   // Synthetic resume
   extractedSkills String   // JSON as string
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -23,27 +30,35 @@ model Employee {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  clientId    String
-  clientName  String
-  industryTag String?  // insurance, pension, workers_comp, etc.
-  createdAt   DateTime @default(now())
+  id                  String   @id @default(cuid())
+  rampProjectCode     String   // "PRJ-000456"
+  name                String   // Display name e.g. "Yukon - SOW #4 - Pre Implementation"
+  clientId            String
+  clientName          String
+  accountExecutive    String   // RAMP name format "Last, First"
+  engagementManager   String   // RAMP name format "Last, First"
+  engagementClass     String   // Client | ULC | Cyber | ICON
+  industryTag         String?  // pension | insurance | workers_comp | benefits | cybersecurity | data
+  scopeCategories     String?  // JSON array as string: assessment, roadmap, implementation, data_conversion, cybersecurity, ocm
+  createdAt           DateTime @default(now())
 
-  allocations Allocation[]
+  allocations         Allocation[]
 }
 
 model Allocation {
-  id              String   @id @default(cuid())
-  employeeId      String
-  projectId       String
-  startDate       DateTime
-  endDate         DateTime
-  allocationPercent Int    // 0-100
-  createdAt       DateTime @default(now())
+  id                String   @id @default(cuid())
+  assignmentCode    String   // "AS-03624"
+  assignmentDetail  String   // "Last, First-Project Name (MM/DD/YY-MM/DD/YY)"
+  employeeId        String
+  projectId         String
+  roleOnProject     String   // PM | BA | DataAnalyst | OCM | AIAdvisory | Cyber | Testing | Oversight
+  startDate         DateTime
+  endDate           DateTime
+  allocationPercent Int      // 0-100
+  createdAt         DateTime @default(now())
 
-  employee        Employee @relation(fields: [employeeId], references: [id])
-  project         Project  @relation(fields: [projectId], references: [id])
+  employee          Employee @relation(fields: [employeeId], references: [id])
+  project           Project  @relation(fields: [projectId], references: [id])
 
   @@index([employeeId])
   @@index([projectId])
@@ -53,13 +68,13 @@ model Allocation {
 model FeedbackTicket {
   id              String   @id @default(cuid())
   type            String   // bug, feature, data_issue, question
-  status          String   @default("new")  // new, triaged, accepted, in_progress, shipped, closed, rejected
+  status          String   @default("new")
   title           String
-  rawText         String   // Original user text
-  chatTranscript  String   // Full chat history
+  rawText         String
+  chatTranscript  String
   structuredJson  String   // JSON as string
-  pageContext     String?  // page where feedback came from
-  createdBy       String?  // user email or anonymous
+  pageContext     String?
+  createdBy       String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

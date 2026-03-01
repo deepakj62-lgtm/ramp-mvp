@@ -1,13 +1,16 @@
 import { prisma } from '@/lib/db';
+import Link from 'next/link';
+import PageContextSetter from '@/components/PageContextSetter';
 
-export default async function PersonPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   const employee = await prisma.employee.findUnique({
     where: { id },
     include: {
       allocations: {
         include: { project: true },
+        orderBy: { startDate: 'asc' },
       },
     },
   });
@@ -15,15 +18,15 @@ export default async function PersonPage({ params }: { params: { id: string } })
   if (!employee) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Employee not found</p>
+        <p className="text-rust font-body">Employee not found</p>
       </div>
     );
   }
 
   // Parse JSON string
-  let skills = [];
-  let tools = [];
-  let certs = [];
+  let skills: any[] = [];
+  let tools: any[] = [];
+  let certs: string[] = [];
   try {
     const extractedSkills = typeof employee.extractedSkills === 'string'
       ? JSON.parse(employee.extractedSkills)
@@ -50,24 +53,50 @@ export default async function PersonPage({ params }: { params: { id: string } })
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
 
+  const groupBadge: Record<string, string> = {
+    'Linea Solutions': 'badge-jade',
+    'Linea Solutions ULC': 'badge-jade',
+    'Linea Secure': 'badge-rust',
+    'ICON': 'badge-frost',
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h1 className="text-3xl font-bold text-gray-900">{employee.name}</h1>
-        <div className="flex gap-4 mt-4">
-          <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded font-medium">
-            {employee.level}
-          </span>
-          <span className="px-4 py-2 bg-gray-100 text-gray-800 rounded font-medium">
-            {employee.location}
-          </span>
+      <PageContextSetter context={{
+        pageName: 'Employee Profile',
+        entityType: 'employee',
+        entityName: employee.name,
+        entityId: employee.id,
+        additionalContext: `${employee.title}, ${employee.practice}, ${employee.location}`,
+      }} />
+
+      {/* Header Card */}
+      <div className="card p-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-jade">{employee.name}</h1>
+            <p className="text-jade/50 font-mono text-sm mt-1">{employee.rampName} &middot; {employee.email}</p>
+            <p className="text-jade/70 font-body mt-2">{employee.title}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className={groupBadge[employee.companyGroup] || 'badge-jade'}>
+              {employee.companyGroup}
+            </span>
+            <span className="badge-jade">{employee.level}</span>
+            <span className="badge-frost">{employee.location}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+          <span className="badge-sea">{employee.careerPath}</span>
+          <span className="badge-sea">{employee.roleFamily}</span>
+          <span className="badge-sea">{employee.practice}</span>
+          <span className="badge-sea">{employee.businessUnit}</span>
         </div>
       </div>
 
       {/* Allocation Timeline */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Allocation Timeline</h2>
+      <div className="card p-6">
+        <h2 className="text-xl font-heading font-bold text-jade mb-4">Allocation Timeline (2026)</h2>
         <div className="space-y-3">
           {months.map((month, idx) => {
             const alloc = monthAllocations[idx] || 0;
@@ -75,15 +104,18 @@ export default async function PersonPage({ params }: { params: { id: string } })
             return (
               <div key={month}>
                 <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-900">{month}</span>
-                  <span className="text-sm font-medium text-gray-600">
+                  <span className="text-sm font-body font-medium text-jade">{month}</span>
+                  <span className="text-sm font-body text-jade/60">
                     {free}% free / {alloc}% allocated
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
                   <div
-                    className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${alloc}%` }}
+                    className="h-2.5 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(alloc, 100)}%`,
+                      backgroundColor: alloc > 90 ? '#B06C50' : alloc > 60 ? '#AD9A7D' : '#86A4AC',
+                    }}
                   />
                 </div>
               </div>
@@ -92,22 +124,23 @@ export default async function PersonPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      {/* Current Allocations */}
+      {/* Current Assignments */}
       {employee.allocations.length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Current Allocations</h2>
-          <div className="space-y-3">
+        <div className="card p-6">
+          <h2 className="text-xl font-heading font-bold text-jade mb-4">Assignments</h2>
+          <div className="space-y-4">
             {employee.allocations.map((alloc) => (
-              <div key={alloc.id} className="border-l-4 border-blue-500 pl-4 py-2">
-                <p className="font-medium text-gray-900">{alloc.project.name}</p>
-                <p className="text-sm text-gray-600">{alloc.project.clientName}</p>
-                <div className="flex gap-4 mt-2 text-sm">
-                  <span className="text-gray-600">
-                    {new Date(alloc.startDate).toLocaleDateString()} -{' '}
-                    {new Date(alloc.endDate).toLocaleDateString()}
+              <div key={alloc.id} className="border-l-4 border-sea pl-4 py-2">
+                <p className="font-body font-medium text-jade">{alloc.project.name}</p>
+                <p className="text-sm text-jade/60 font-body">{alloc.project.clientName}</p>
+                <div className="flex flex-wrap gap-3 mt-2 text-sm font-body">
+                  <span className="badge-jade text-xs">{alloc.roleOnProject}</span>
+                  <span className="text-jade/60">
+                    {new Date(alloc.startDate).toLocaleDateString()} - {new Date(alloc.endDate).toLocaleDateString()}
                   </span>
-                  <span className="font-semibold text-gray-900">{alloc.allocationPercent}%</span>
+                  <span className="font-semibold text-jade">{alloc.allocationPercent}%</span>
                 </div>
+                <p className="text-xs text-jade/40 font-mono mt-1">{alloc.assignmentCode} &middot; {alloc.assignmentDetail}</p>
               </div>
             ))}
           </div>
@@ -117,38 +150,35 @@ export default async function PersonPage({ params }: { params: { id: string } })
       {/* Skills & Expertise */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Skills */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Professional Skills</h2>
+        <div className="card p-6">
+          <h2 className="text-lg font-heading font-bold text-jade mb-4">Professional Skills</h2>
           <div className="space-y-2">
             {skills.length > 0 ? (
               skills.map((skill: any, idx: number) => (
                 <div key={idx} className="flex justify-between items-center">
-                  <span className="text-gray-900">{skill.name}</span>
-                  <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-800">
+                  <span className="font-body text-jade">{skill.name}</span>
+                  <span className="badge-sea text-xs">
                     {skill.yearsOfExp} yrs
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-gray-600 text-sm">No skills listed</p>
+              <p className="text-jade/50 text-sm font-body">No skills listed</p>
             )}
           </div>
         </div>
 
         {/* Tools & Certifications */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Tools & Certifications</h2>
-          <div className="space-y-3">
+        <div className="card p-6">
+          <h2 className="text-lg font-heading font-bold text-jade mb-4">Tools & Certifications</h2>
+          <div className="space-y-4">
             {certs.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-900 mb-2">Certifications:</p>
+                <p className="text-sm font-body font-semibold text-jade mb-2">Certifications:</p>
                 <div className="flex flex-wrap gap-2">
-                  {certs.map((cert: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-block px-3 py-1 rounded bg-purple-100 text-purple-800 text-sm"
-                    >
-                      {cert}
+                  {certs.map((cert: any, idx: number) => (
+                    <span key={idx} className="badge-frost">
+                      {typeof cert === 'string' ? cert : cert.name}
                     </span>
                   ))}
                 </div>
@@ -156,13 +186,10 @@ export default async function PersonPage({ params }: { params: { id: string } })
             )}
             {tools.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-900 mb-2">Tools/Platforms:</p>
+                <p className="text-sm font-body font-semibold text-jade mb-2">Tools/Platforms:</p>
                 <div className="flex flex-wrap gap-2">
                   {tools.map((tool: any, idx: number) => (
-                    <span
-                      key={idx}
-                      className="inline-block px-3 py-1 rounded bg-orange-100 text-orange-800 text-sm"
-                    >
+                    <span key={idx} className="badge-rust">
                       {typeof tool === 'string' ? tool : tool.name}
                     </span>
                   ))}
@@ -174,21 +201,21 @@ export default async function PersonPage({ params }: { params: { id: string } })
       </div>
 
       {/* Resume */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Resume</h2>
-        <div className="bg-gray-50 p-4 rounded text-sm text-gray-700 whitespace-pre-wrap font-mono">
+      <div className="card p-6">
+        <h2 className="text-lg font-heading font-bold text-jade mb-4">Resume</h2>
+        <div className="bg-canvas p-4 rounded-lg text-sm text-jade/80 whitespace-pre-wrap font-mono border border-gray-100">
           {employee.resumeText}
         </div>
       </div>
 
-      {/* Feedback Button */}
+      {/* Back Link */}
       <div className="text-center py-4">
-        <a
-          href="/"
-          className="text-blue-600 hover:text-blue-700 font-medium"
+        <Link
+          href="/search"
+          className="text-jade hover:text-jade-light font-body font-medium underline underline-offset-2"
         >
-          ← Back to Search
-        </a>
+          Back to Search
+        </Link>
       </div>
     </div>
   );
