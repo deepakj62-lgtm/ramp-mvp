@@ -7,7 +7,5 @@ node_modules
 dist
 build
 .vercel
-db.sqlite
 db.sqlite-journal
-prisma/*.db
 prisma/*.db-journal
