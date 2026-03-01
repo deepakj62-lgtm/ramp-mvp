@@ -30,17 +30,23 @@ model Employee {
 }
 
 model Project {
-  id                  String   @id @default(cuid())
-  rampProjectCode     String   // "PRJ-000456"
-  name                String   // Display name e.g. "Yukon - SOW #4 - Pre Implementation"
+  id                  String    @id @default(cuid())
+  rampProjectCode     String    // "PRJ-000456"
+  name                String    // Display name e.g. "Yukon - SOW #4 - Pre Implementation"
   clientId            String
   clientName          String
-  accountExecutive    String   // RAMP name format "Last, First"
-  engagementManager   String   // RAMP name format "Last, First"
-  engagementClass     String   // Client | ULC | Cyber | ICON
-  industryTag         String?  // pension | insurance | workers_comp | benefits | cybersecurity | data
-  scopeCategories     String?  // JSON array as string: assessment, roadmap, implementation, data_conversion, cybersecurity, ocm
-  createdAt           DateTime @default(now())
+  accountExecutive    String    // RAMP name format "Last, First"
+  engagementManager   String    // RAMP name format "Last, First"
+  engagementClass     String    // Client | ULC | Cyber | ICON
+  industryTag         String?   // pension | insurance | workers_comp | benefits | cybersecurity | data
+  scopeCategories     String?   // JSON array as string: assessment, roadmap, implementation, data_conversion, cybersecurity, ocm
+  status              String    @default("In Progress")  // Planning | In Progress | On Hold | Closing | Completed
+  description         String    @default("")             // Project overview paragraph(s)
+  startDate           DateTime?
+  endDate             DateTime?
+  currentPhase        String    @default("")             // Discovery | Assessment | Planning | Requirements | Implementation | Testing | UAT | Go-Live | Support
+  milestones          String    @default("[]")           // JSON array of {title, date, status, notes}
+  createdAt           DateTime  @default(now())
 
   allocations         Allocation[]
 }

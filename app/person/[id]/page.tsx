@@ -38,12 +38,18 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     // Fallback if parsing fails
   }
 
-  // Calculate monthly allocations
+  const today = new Date();
+  const currentYear = today.getFullYear();
+
+  // Calculate monthly allocations for current year
   const monthAllocations: Record<number, number> = {};
   for (const alloc of employee.allocations) {
-    const startMonth = alloc.startDate.getMonth();
-    const endMonth = alloc.endDate.getMonth();
-    for (let m = startMonth; m <= endMonth && m < 12; m++) {
+    const start = new Date(alloc.startDate);
+    const end = new Date(alloc.endDate);
+    // Only consider months within the current year
+    const startM = start.getFullYear() === currentYear ? start.getMonth() : (start.getFullYear() < currentYear ? 0 : 12);
+    const endM   = end.getFullYear()   === currentYear ? end.getMonth()   : (end.getFullYear()   > currentYear ? 11 : -1);
+    for (let m = startM; m <= endM; m++) {
       monthAllocations[m] = (monthAllocations[m] || 0) + alloc.allocationPercent;
     }
   }
@@ -52,6 +58,44 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
+
+  // Separate active vs past allocations
+  const activeAllocs = employee.allocations.filter(a => new Date(a.endDate) >= today);
+  const pastAllocs   = employee.allocations.filter(a => new Date(a.endDate) < today);
+
+  const fmt = (d: Date | string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  // Build rich chatbot context
+  const chatbotContext = `Employee: ${employee.name} (${employee.rampName})
+Title: ${employee.title} | Level: ${employee.level} | Location: ${employee.location}
+Company Group: ${employee.companyGroup} | Business Unit: ${employee.businessUnit}
+Role Family: ${employee.roleFamily} | Practice: ${employee.practice}
+Email: ${employee.email}
+
+Skills: ${skills.map((s: any) => `${s.name} (${s.yearsOfExp} yrs)`).join(', ')}
+Tools: ${tools.map((t: any) => (typeof t === 'string' ? t : t.name)).join(', ')}
+Certifications: ${certs.map((c: any) => (typeof c === 'string' ? c : c.name)).join(', ')}
+
+Current Active Allocations (${activeAllocs.length}):
+${activeAllocs.length > 0
+  ? activeAllocs.map(a => `  - ${a.project.name} (${a.project.clientName}) | Role: ${a.roleOnProject} | ${a.allocationPercent}% | ${fmt(a.startDate)} – ${fmt(a.endDate)}`).join('\n')
+  : '  None'}
+
+Past Allocations (${pastAllocs.length}):
+${pastAllocs.length > 0
+  ? pastAllocs.map(a => `  - ${a.project.name} | Role: ${a.roleOnProject} | ${fmt(a.startDate)} – ${fmt(a.endDate)}`).join('\n')
+  : '  None'}
+
+${currentYear} Monthly Availability:
+${months.map((month, idx) => {
+  const alloc = monthAllocations[idx] || 0;
+  const free = Math.max(0, 100 - alloc);
+  return `  ${month}: ${alloc}% allocated, ${free}% available`;
+}).join('\n')}
+
+Resume:
+${employee.resumeText}`;
+
 
   const groupBadge: Record<string, string> = {
     'Linea Solutions': 'badge-jade',
@@ -62,13 +106,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="space-y-6">
-      <PageContextSetter context={{
-        pageName: 'Employee Profile',
-        entityType: 'employee',
-        entityName: employee.name,
-        entityId: employee.id,
-        additionalContext: `${employee.title}, ${employee.practice}, ${employee.location}`,
-      }} />
+      <PageContextSetter context={chatbotContext} />
 
       {/* Header Card */}
       <div className="card p-6">
@@ -96,7 +134,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
 
       {/* Allocation Timeline */}
       <div className="card p-6">
-        <h2 className="text-xl font-heading font-bold text-jade mb-4">Allocation Timeline (2026)</h2>
+        <h2 className="text-xl font-heading font-bold text-jade mb-4">Allocation Timeline ({currentYear})</h2>
         <div className="space-y-3">
           {months.map((month, idx) => {
             const alloc = monthAllocations[idx] || 0;
@@ -127,23 +165,51 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       {/* Current Assignments */}
       {employee.allocations.length > 0 && (
         <div className="card p-6">
-          <h2 className="text-xl font-heading font-bold text-jade mb-4">Assignments</h2>
-          <div className="space-y-4">
-            {employee.allocations.map((alloc) => (
-              <div key={alloc.id} className="border-l-4 border-sea pl-4 py-2">
-                <p className="font-body font-medium text-jade">{alloc.project.name}</p>
-                <p className="text-sm text-jade/60 font-body">{alloc.project.clientName}</p>
-                <div className="flex flex-wrap gap-3 mt-2 text-sm font-body">
-                  <span className="badge-jade text-xs">{alloc.roleOnProject}</span>
-                  <span className="text-jade/60">
-                    {new Date(alloc.startDate).toLocaleDateString()} - {new Date(alloc.endDate).toLocaleDateString()}
-                  </span>
-                  <span className="font-semibold text-jade">{alloc.allocationPercent}%</span>
+          <h2 className="text-xl font-heading font-bold text-jade mb-4">
+            Active Assignments <span className="text-base font-normal text-jade/50">({activeAllocs.length})</span>
+          </h2>
+          {activeAllocs.length === 0 ? (
+            <p className="text-sm text-jade/40 font-body">No active assignments</p>
+          ) : (
+            <div className="space-y-4">
+              {activeAllocs.map((alloc) => (
+                <div key={alloc.id} className="border-l-4 border-jade pl-4 py-2">
+                  <Link href={`/project/${alloc.project.id}`} className="font-body font-medium text-jade hover:text-jade/70 hover:underline">
+                    {alloc.project.name}
+                  </Link>
+                  <p className="text-sm text-jade/60 font-body">{alloc.project.clientName}</p>
+                  <div className="flex flex-wrap gap-3 mt-2 text-sm font-body">
+                    <span className="badge-jade text-xs">{alloc.roleOnProject}</span>
+                    <span className="text-jade/60">
+                      {fmt(alloc.startDate)} – {fmt(alloc.endDate)}
+                    </span>
+                    <span className="font-semibold text-jade">{alloc.allocationPercent}%</span>
+                  </div>
+                  <p className="text-xs text-jade/40 font-mono mt-1">{alloc.assignmentCode}</p>
                 </div>
-                <p className="text-xs text-jade/40 font-mono mt-1">{alloc.assignmentCode} &middot; {alloc.assignmentDetail}</p>
+              ))}
+            </div>
+          )}
+
+          {pastAllocs.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-heading font-semibold text-jade/50 mb-3">Past Assignments ({pastAllocs.length})</h3>
+              <div className="space-y-2">
+                {pastAllocs.map((alloc) => (
+                  <div key={alloc.id} className="border-l-4 border-jade/20 pl-4 py-1">
+                    <Link href={`/project/${alloc.project.id}`} className="text-sm font-body text-jade/50 hover:text-jade/70">
+                      {alloc.project.name}
+                    </Link>
+                    <div className="flex flex-wrap gap-2 mt-0.5 text-xs font-body text-jade/40">
+                      <span>{alloc.roleOnProject}</span>
+                      <span>·</span>
+                      <span>{fmt(alloc.startDate)} – {fmt(alloc.endDate)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const engagementClass = searchParams.get('engagementClass') || '';
     const industryTag = searchParams.get('industryTag') || '';
+    const status = searchParams.get('status') || '';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '25');
 
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
 
     if (industryTag && industryTag !== 'all') {
       where.industryTag = industryTag;
+    }
+
+    if (status && status !== 'all') {
+      where.status = status;
     }
 
     const [projects, total] = await Promise.all([

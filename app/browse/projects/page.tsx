@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DataTable from '@/components/DataTable';
 import FilterBar from '@/components/FilterBar';
 import PageContextSetter from '@/components/PageContextSetter';
@@ -16,6 +17,8 @@ interface Project {
   engagementClass: string;
   industryTag: string;
   scopeCategories: string;
+  status: string;
+  currentPhase: string;
   _count: { allocations: number };
 }
 
@@ -26,12 +29,33 @@ const engagementBadge: Record<string, string> = {
   'ICON': 'badge-frost',
 };
 
+const statusColors: Record<string, string> = {
+  'In Progress': 'bg-jade/20 text-jade border border-jade/40',
+  'Planning':    'bg-sea/20 text-sea border border-sea/40',
+  'On Hold':     'bg-rust/20 text-rust border border-rust/40',
+  'Closing':     'bg-frost/20 text-frost border border-frost/40',
+  'Completed':   'bg-canvas text-jade/60 border border-jade/20',
+};
+
 const filters = [
   {
     key: 'search',
     label: 'Search',
     type: 'text' as const,
     placeholder: 'Search by name, client, code...',
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    type: 'select' as const,
+    options: [
+      { label: 'All Statuses', value: 'all' },
+      { label: 'In Progress', value: 'In Progress' },
+      { label: 'Planning', value: 'Planning' },
+      { label: 'On Hold', value: 'On Hold' },
+      { label: 'Closing', value: 'Closing' },
+      { label: 'Completed', value: 'Completed' },
+    ],
   },
   {
     key: 'engagementClass',
@@ -117,7 +141,18 @@ export default function ProjectsPage() {
       label: 'Project Name',
       sortable: true,
       render: (row: Project) => (
-        <span className="font-body font-medium text-jade">{row.name}</span>
+        <Link href={`/project/${row.id}`} className="font-body font-medium text-jade hover:text-jade/70 hover:underline">
+          {row.name}
+        </Link>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (row: Project) => (
+        <span className={`text-xs px-2 py-0.5 rounded-full font-body font-medium ${statusColors[row.status] ?? 'bg-canvas text-jade/60 border border-jade/20'}`}>
+          {row.status}
+        </span>
       ),
     },
     {
@@ -148,12 +183,12 @@ export default function ProjectsPage() {
       key: 'industryTag',
       label: 'Industry',
       render: (row: Project) => (
-        <span className="badge-sea text-xs">{row.industryTag || 'N/A'}</span>
+        <span className="badge-sea text-xs">{row.industryTag?.replace('_', ' ') || 'N/A'}</span>
       ),
     },
     {
       key: 'allocations',
-      label: 'Assignments',
+      label: 'Team',
       render: (row: Project) => (
         <span className="text-sm text-jade/60 font-body">{row._count.allocations}</span>
       ),
