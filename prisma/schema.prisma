@@ -1,0 +1,68 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id              String   @id @default(cuid())
+  name            String
+  nameAlt         String?  // Alternative name format for testing
+  level           String   // Associate, Consultant, Senior, Principal
+  location        String   // US or Canada
+  resumeText      String   // Long text
+  extractedSkills String   // JSON as string
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  allocations     Allocation[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  clientId    String
+  clientName  String
+  industryTag String?  // insurance, pension, workers_comp, etc.
+  createdAt   DateTime @default(now())
+
+  allocations Allocation[]
+}
+
+model Allocation {
+  id              String   @id @default(cuid())
+  employeeId      String
+  projectId       String
+  startDate       DateTime
+  endDate         DateTime
+  allocationPercent Int    // 0-100
+  createdAt       DateTime @default(now())
+
+  employee        Employee @relation(fields: [employeeId], references: [id])
+  project         Project  @relation(fields: [projectId], references: [id])
+
+  @@index([employeeId])
+  @@index([projectId])
+  @@index([startDate])
+}
+
+model FeedbackTicket {
+  id              String   @id @default(cuid())
+  type            String   // bug, feature, data_issue, question
+  status          String   @default("new")  // new, triaged, accepted, in_progress, shipped, closed, rejected
+  title           String
+  rawText         String   // Original user text
+  chatTranscript  String   // Full chat history
+  structuredJson  String   // JSON as string
+  pageContext     String?  // page where feedback came from
+  createdBy       String?  // user email or anonymous
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
