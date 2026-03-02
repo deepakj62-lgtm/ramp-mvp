@@ -19,6 +19,8 @@ interface DataTableProps<T> {
   onSort?: (key: string, direction: 'asc' | 'desc') => void;
   loading?: boolean;
   emptyMessage?: string;
+  rowClassName?: string;   // e.g. "bg-pink-100 hover:bg-pink-200" — applied to every <tr>
+  cellClassName?: string;  // e.g. "text-lg py-6 px-8" — applied to every <td>
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -31,6 +33,8 @@ export default function DataTable<T extends Record<string, any>>({
   onSort,
   loading = false,
   emptyMessage = 'No results found',
+  rowClassName = '',
+  cellClassName = '',
 }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string>('');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -90,9 +94,9 @@ export default function DataTable<T extends Record<string, any>>({
               </tr>
             ) : (
               data.map((row, idx) => (
-                <tr key={row.id || idx} className="hover:bg-canvas transition">
+                <tr key={row.id || idx} className={rowClassName || 'hover:bg-canvas transition'}>
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
+                    <td key={col.key} className={cellClassName || 'px-4 py-3'}>
                       {col.render ? col.render(row) : (row[col.key] ?? '')}
                     </td>
                   ))}

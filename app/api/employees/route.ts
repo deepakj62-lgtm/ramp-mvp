@@ -20,6 +20,14 @@ export async function GET(request: NextRequest) {
         { rampName: { contains: search } },
         { title: { contains: search } },
         { email: { contains: search } },
+        { roleFamily: { contains: search } },
+        { practice: { contains: search } },
+        { businessUnit: { contains: search } },
+        { careerPath: { contains: search } },
+        { level: { contains: search } },
+        { location: { contains: search } },
+        { resumeText: { contains: search } },
+        { extractedSkills: { contains: search } },
       ];
     }
 
@@ -67,5 +75,53 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Employees API error:', error);
     return NextResponse.json({ error: 'Failed to fetch employees' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      name, email, title, level, companyGroup, businessUnit, careerPath,
+      roleFamily, practice, location, resumeText, extractedSkills, pageLayout,
+    } = body;
+
+    if (!name || !email || !title) {
+      return NextResponse.json({ error: 'name, email, and title are required' }, { status: 400 });
+    }
+
+    // Generate rampName (Last, First)
+    const parts = name.trim().split(' ');
+    const rampName = parts.length >= 2
+      ? `${parts[parts.length - 1]}, ${parts.slice(0, -1).join(' ')}`
+      : name;
+
+    // Auto-generate assignment code
+    const count = await prisma.employee.count();
+    const empCode = `EMP-${String(count + 1).padStart(5, '0')}`;
+
+    const employee = await prisma.employee.create({
+      data: {
+        name: name.trim(),
+        rampName,
+        email: email.trim(),
+        title: title.trim(),
+        level: level || 'Consultant',
+        companyGroup: companyGroup || 'Linea Solutions',
+        businessUnit: businessUnit || 'Delivery',
+        careerPath: careerPath || 'Consultant',
+        roleFamily: roleFamily || 'BA',
+        practice: practice || 'CrossPractice',
+        location: location || 'US',
+        resumeText: resumeText || `${name} is a ${title} at Linea Solutions.`,
+        extractedSkills: extractedSkills ? JSON.stringify(extractedSkills) : '{}',
+        pageLayout: pageLayout ? JSON.stringify(pageLayout) : '{}',
+      },
+    });
+
+    return NextResponse.json({ success: true, employee, id: employee.id }, { status: 201 });
+  } catch (error) {
+    console.error('Create employee error:', error);
+    return NextResponse.json({ error: 'Failed to create employee' }, { status: 500 });
   }
 }

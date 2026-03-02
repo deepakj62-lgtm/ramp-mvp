@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import DataTable from '@/components/DataTable';
 import FilterBar from '@/components/FilterBar';
 import PageContextSetter from '@/components/PageContextSetter';
+import AddEntityModal from '@/components/AddEntityModal';
+import Avatar from '@/components/Avatar';
 
 interface Employee {
   id: string;
@@ -40,7 +43,7 @@ const filters = [
     key: 'search',
     label: 'Search',
     type: 'text' as const,
-    placeholder: 'Search by name, title, email...',
+    placeholder: 'Search by name, title, skills, certifications, practice...',
   },
   {
     key: 'companyGroup',
@@ -93,11 +96,17 @@ const filters = [
 ];
 
 export default function EmployeesPage() {
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
+
   const [data, setData] = useState<Employee[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [filterValues, setFilterValues] = useState<Record<string, string>>(
+    initialSearch ? { search: initialSearch } : {}
+  );
+  const [showAdd, setShowAdd] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -140,10 +149,13 @@ export default function EmployeesPage() {
       label: 'Name',
       sortable: true,
       render: (row: Employee) => (
-        <div>
-          <div className="font-body font-medium text-jade">{row.name}</div>
-          <div className="text-xs text-jade/40 font-mono">{row.rampName}</div>
-        </div>
+        <Link href={`/person/${row.id}`} className="flex items-center gap-3 group">
+          <Avatar name={row.name} size="sm" />
+          <div>
+            <div className="font-body font-medium text-jade group-hover:underline underline-offset-2">{row.name}</div>
+            <div className="text-xs text-jade/40 font-mono">{row.rampName}</div>
+          </div>
+        </Link>
       ),
     },
     {
@@ -189,9 +201,10 @@ export default function EmployeesPage() {
       render: (row: Employee) => (
         <Link
           href={`/person/${row.id}`}
-          className="text-jade hover:text-jade-light text-sm font-body font-medium underline underline-offset-2"
+          className="text-jade/40 hover:text-jade text-sm font-body transition-colors"
+          title="View profile"
         >
-          View
+          →
         </Link>
       ),
     },
@@ -201,9 +214,16 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <PageContextSetter context={{ pageName: 'Employees Directory' }} />
 
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-jade">Employees</h1>
-        <p className="text-jade/60 font-body mt-1">Browse and filter all {total} employees</p>
+      {showAdd && <AddEntityModal entityType="employee" onClose={() => { setShowAdd(false); fetchData(); }} />}
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-jade">Employees</h1>
+          <p className="text-jade/60 font-body mt-1">Browse and filter all {total} employees</p>
+        </div>
+        <button onClick={() => setShowAdd(true)} className="btn-primary text-sm flex items-center gap-1.5">
+          <span className="text-lg leading-none">+</span> Add Employee
+        </button>
       </div>
 
       <FilterBar
@@ -222,6 +242,8 @@ export default function EmployeesPage() {
         onPageChange={setPage}
         loading={loading}
         emptyMessage="No employees match your filters"
+        rowClassName="bg-pink-100 hover:bg-pink-200"
+        cellClassName="text-lg py-6 px-8"
       />
     </div>
   );

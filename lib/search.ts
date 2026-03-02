@@ -72,20 +72,17 @@ export async function searchStaff(filters: SearchFilters) {
       results = results.filter(emp => emp.level.toLowerCase().includes(level.toLowerCase()));
     }
 
-    // Filter by practice if specified
-    if (practice) {
-      results = results.filter(emp => emp.practice.toLowerCase().includes(practice.toLowerCase()));
-    }
-
-    // Filter by role family if specified
-    if (roleFamily) {
-      results = results.filter(emp => emp.roleFamily.toLowerCase().includes(roleFamily.toLowerCase()));
-    }
-
     // Use LLM-provided skills if available, otherwise extract from query
-    const skillKeywords = providedSkills && providedSkills.length > 0
-      ? providedSkills
-      : extractKeywords(query);
+    // practice and roleFamily are scoring keywords (not hard filters) to avoid
+    // mismatches from abbreviations or naming differences (e.g. "Cyber" vs "Cybersecurity")
+    const softKeywords = [
+      ...(practice ? [practice] : []),
+      ...(roleFamily ? [roleFamily] : []),
+    ];
+    const skillKeywords = [
+      ...(providedSkills && providedSkills.length > 0 ? providedSkills : extractKeywords(query)),
+      ...softKeywords,
+    ];
     const scoredResults = results.map(emp => {
       // Parse JSON string from database
       let empSkills: any[] = [];

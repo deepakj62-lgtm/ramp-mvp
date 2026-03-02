@@ -50,16 +50,24 @@ export async function GET(request: NextRequest) {
         name: project.name,
         rampProjectCode: project.rampProjectCode,
         engagementClass: project.engagementClass,
-      });
+        engagementManager: project.engagementManager,
+        accountExecutive: project.accountExecutive,
+      } as any);
     }
 
     let clients = Object.values(clientMap);
 
-    // Filter by search
+    // Filter by search — client name, project names, managers
     if (search) {
       const lowerSearch = search.toLowerCase();
       clients = clients.filter(c =>
-        c.clientName.toLowerCase().includes(lowerSearch)
+        c.clientName.toLowerCase().includes(lowerSearch) ||
+        c.clientId.toLowerCase().includes(lowerSearch) ||
+        c.projects.some(p =>
+          (p as any).name?.toLowerCase().includes(lowerSearch) ||
+          (p as any).engagementManager?.toLowerCase().includes(lowerSearch) ||
+          (p as any).accountExecutive?.toLowerCase().includes(lowerSearch)
+        )
       );
     }
 

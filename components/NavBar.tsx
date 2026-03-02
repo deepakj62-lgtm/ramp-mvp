@@ -9,6 +9,8 @@ const navLinks = [
   { href: '/browse/clients', label: 'Clients' },
   { href: '/browse/projects', label: 'Projects' },
   { href: '/browse/allocations', label: 'Allocations' },
+  { href: '/org-chart', label: 'Org Chart' },
+  { href: '/changes', label: '⚡ Changes' },
   { href: '/feedback', label: 'Feedback Board' },
 ];
 

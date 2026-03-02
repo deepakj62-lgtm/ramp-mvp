@@ -1,14 +1,14 @@
 'use client';
 
 const EXAMPLE_QUERIES = [
-  '50% free in April with pension experience',
-  'Senior BA available for insurance project',
-  'SQL + Python skills in Canada',
-  'Cybersecurity consultant for pen testing',
-  'Workers comp analyst available in Q2',
-  'Vitech V3 experience, fully available',
-  'Principal level with project management',
-  'Data analyst with Tableau and Power BI',
+  'BA with Vitech experience pension',
+  'Pen tester with OSCP certification',
+  'PMP certified project manager',
+  'Python developer data analytics',
+  'OCM change management specialist',
+  'Workers comp BA Canada',
+  'SQL database engineer',
+  'CBAP requirements gathering pension',
 ];
 
 interface ExampleQueriesProps {

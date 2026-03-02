@@ -83,6 +83,106 @@ export async function chat(
   return mockChat(messages);
 }
 
+// ─── Vision Chat (multimodal) ────────────────────────────────────────
+
+export async function chatWithVision(
+  messages: LLMMessage[],
+  imageBase64: string,
+  imageMimeType: string,
+  config?: Partial<LLMConfig>
+): Promise<LLMResponse> {
+  const cfg = { ...getConfig(), ...config };
+
+  if (cfg.provider === 'mock') {
+    return mockChat(messages); // mock ignores image, treats as text
+  }
+
+  if (cfg.provider === 'anthropic') {
+    const systemMessage = messages.find(m => m.role === 'system');
+    const nonSystemMessages = messages.filter(m => m.role !== 'system');
+
+    // Attach image to the last user message
+    const apiMessages = nonSystemMessages.map((m, idx) => {
+      if (m.role === 'user' && idx === nonSystemMessages.length - 1) {
+        return {
+          role: 'user' as const,
+          content: [
+            {
+              type: 'image' as const,
+              source: {
+                type: 'base64' as const,
+                media_type: (imageMimeType || 'image/png') as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+                data: imageBase64,
+              },
+            },
+            { type: 'text' as const, text: m.content },
+          ],
+        };
+      }
+      return { role: m.role as 'user' | 'assistant', content: m.content };
+    });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': cfg.apiKey!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: cfg.model,
+        max_tokens: 2048,
+        system: systemMessage?.content || '',
+        messages: apiMessages,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Anthropic vision error:', await response.text());
+      return mockChat(messages);
+    }
+
+    const data = await response.json();
+    return { content: data.content[0].text, provider: 'anthropic' };
+  }
+
+  if (cfg.provider === 'openai') {
+    const systemMessage = messages.find(m => m.role === 'system');
+    const nonSystemMessages = messages.filter(m => m.role !== 'system');
+
+    const apiMessages = [
+      ...(systemMessage ? [{ role: 'system', content: systemMessage.content }] : []),
+      ...nonSystemMessages.map((m, idx) => {
+        if (m.role === 'user' && idx === nonSystemMessages.length - 1) {
+          return {
+            role: 'user',
+            content: [
+              { type: 'image_url', image_url: { url: `data:${imageMimeType};base64,${imageBase64}` } },
+              { type: 'text', text: m.content },
+            ],
+          };
+        }
+        return { role: m.role, content: m.content };
+      }),
+    ];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify({ model: 'gpt-4o-mini', messages: apiMessages, max_tokens: 1024 }),
+    });
+
+    if (!response.ok) return mockChat(messages);
+    const data = await response.json();
+    return { content: data.choices[0].message.content, provider: 'openai' };
+  }
+
+  return mockChat(messages);
+}
+
 // ─── Anthropic Provider ──────────────────────────────────────────────
 
 async function anthropicChat(messages: LLMMessage[], cfg: LLMConfig): Promise<LLMResponse> {
@@ -98,7 +198,7 @@ async function anthropicChat(messages: LLMMessage[], cfg: LLMConfig): Promise<LL
     },
     body: JSON.stringify({
       model: cfg.model,
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: systemMessage?.content || '',
       messages: nonSystemMessages.map(m => ({
         role: m.role,

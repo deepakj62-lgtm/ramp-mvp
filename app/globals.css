@@ -148,6 +148,23 @@ h1, h2, h3, h4 {
   background-color: rgba(134,164,172,0.3);
 }
 
+/* Form input */
+.form-input {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgba(11,43,47,0.2);
+  border-radius: 0.5rem;
+  font-family: 'Karla', 'Inter', sans-serif;
+  font-size: 0.8125rem;
+  color: #0B2B2F;
+  background-color: white;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.form-input:focus {
+  border-color: rgba(11,43,47,0.5);
+  box-shadow: 0 0 0 2px rgba(11,43,47,0.1);
+}
+
 /* Extracted param pill */
 .param-pill {
   display: inline-flex;

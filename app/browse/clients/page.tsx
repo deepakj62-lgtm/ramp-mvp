@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import PageContextSetter from '@/components/PageContextSetter';
+import AddEntityModal from '@/components/AddEntityModal';
 
 interface ClientProject {
   id: string;
@@ -39,20 +41,13 @@ const sectorLabel: Record<string, string> = {
   'vendor': 'Vendor',
 };
 
-const engagementBadge: Record<string, string> = {
-  'Client': 'badge-jade',
-  'ULC': 'badge-sea',
-  'Cyber': 'badge-rust',
-  'ICON': 'badge-frost',
-};
-
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sector, setSector] = useState('all');
-  const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -79,10 +74,16 @@ export default function ClientsPage() {
   return (
     <div className="space-y-6">
       <PageContextSetter context={{ pageName: 'Clients Directory' }} />
+      {showAdd && <AddEntityModal entityType="client" onClose={() => { setShowAdd(false); fetchData(); }} />}
 
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-jade">Clients</h1>
-        <p className="text-jade/60 font-body mt-1">{total} clients across all business units</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-jade">Clients</h1>
+          <p className="text-jade/60 font-body mt-1">{total} clients</p>
+        </div>
+        <button onClick={() => setShowAdd(true)} className="btn-primary text-sm flex items-center gap-1.5">
+          <span className="text-lg leading-none">+</span> Add Client
+        </button>
       </div>
 
       {/* Filters */}
@@ -93,7 +94,7 @@ export default function ClientsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search clients..."
+              placeholder="Search by client name, project name, engagement manager..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-body focus:outline-none focus:ring-2 focus:ring-jade/40 focus:border-jade"
             />
           </div>
@@ -117,7 +118,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      {/* Client Cards */}
+      {/* Client Cards — now link to /client/[clientId] */}
       {loading ? (
         <div className="text-center py-12">
           <div className="flex items-center justify-center gap-2 text-jade/50 font-body">
@@ -135,15 +136,15 @@ export default function ClientsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {clients.map((client) => (
-            <div
+            <Link
               key={client.clientId}
-              className="card p-4 cursor-pointer hover:shadow-md transition"
-              onClick={() => setExpandedClient(
-                expandedClient === client.clientId ? null : client.clientId
-              )}
+              href={`/client/${encodeURIComponent(client.clientId)}`}
+              className="card p-4 hover:shadow-md transition block group"
             >
               <div className="flex justify-between items-start mb-2">
-                <h3 className="font-body font-semibold text-jade">{client.clientName}</h3>
+                <h3 className="font-body font-semibold text-jade group-hover:text-jade/80 transition-colors">
+                  {client.clientName}
+                </h3>
                 <span className={sectorBadgeClass[client.sector] || 'badge-sea'} style={{ fontSize: '0.75rem' }}>
                   {sectorLabel[client.sector] || client.sector}
                 </span>
@@ -151,21 +152,10 @@ export default function ClientsPage() {
               <p className="text-sm text-jade/60 font-body">
                 {client.projects.length} project{client.projects.length !== 1 ? 's' : ''}
               </p>
-
-              {/* Expanded view */}
-              {expandedClient === client.clientId && (
-                <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-                  {client.projects.map((project) => (
-                    <div key={project.id} className="flex justify-between items-center">
-                      <span className="text-sm font-body text-jade/80">{project.name}</span>
-                      <span className={`${engagementBadge[project.engagementClass] || 'badge-jade'}`} style={{ fontSize: '0.7rem', padding: '0.15rem 0.5rem' }}>
-                        {project.engagementClass}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <p className="text-xs text-jade/40 font-body mt-1 group-hover:text-jade/60 transition-colors">
+                View client page →
+              </p>
+            </Link>
           ))}
         </div>
       )}

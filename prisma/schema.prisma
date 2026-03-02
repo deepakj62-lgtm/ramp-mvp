@@ -23,10 +23,14 @@ model Employee {
   location        String   // US | Canada
   resumeText      String   // Synthetic resume
   extractedSkills String   // JSON as string
+  pageLayout      String   @default("{}")  // JSON: { tagline, insight, emphasis, accentColor, sectionOrder, statusBanner, keyStats }
+  reportsTo       String?  // Employee.id of direct manager (self-referential)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   allocations     Allocation[]
+  manager         Employee?  @relation("ReportsTo", fields: [reportsTo], references: [id])
+  reports         Employee[] @relation("ReportsTo")
 }
 
 model Project {
@@ -46,6 +50,7 @@ model Project {
   endDate             DateTime?
   currentPhase        String    @default("")             // Discovery | Assessment | Planning | Requirements | Implementation | Testing | UAT | Go-Live | Support
   milestones          String    @default("[]")           // JSON array of {title, date, status, notes}
+  pageLayout          String    @default("{}")           // JSON: { tagline, insight, statusBanner, highlights, keyStats }
   createdAt           DateTime  @default(now())
 
   allocations         Allocation[]
@@ -71,19 +76,50 @@ model Allocation {
   @@index([startDate])
 }
 
+model ClientNote {
+  id         String   @id @default(cuid())
+  clientId   String   @unique
+  clientName String
+  pageLayout String   @default("{}")  // JSON: same structure as Employee/Project pageLayout
+  notes      String   @default("")
+  updatedAt  DateTime @updatedAt
+}
+
+model ChangeLog {
+  id          String    @id @default(cuid())
+  command     String                         // original NL command text
+  actionPlan  String                         // JSON: structured actions Claude planned
+  executed    Boolean   @default(false)
+  executedAt  DateTime?
+  docText     String    @default("")         // extracted text from uploaded document
+  docFileName String    @default("")         // original filename of uploaded doc
+  summary     String    @default("")         // LLM-generated summary of what changed
+  createdAt   DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
 model FeedbackTicket {
-  id              String   @id @default(cuid())
-  type            String   // bug, feature, data_issue, question
-  status          String   @default("new")
-  title           String
-  rawText         String
-  chatTranscript  String
-  structuredJson  String   // JSON as string
-  pageContext     String?
-  createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  type                 String   // bug, feature, data_issue, question, action
+  status               String   @default("new")
+  title                String
+  rawText              String
+  chatTranscript       String
+  structuredJson       String   // JSON as string
+  pageContext          String?
+  createdBy            String?
+  // Action engine fields
+  complexity           String   @default("large")  // "small" | "large"
+  autoApproved         Boolean  @default(false)
+  implementationPlan   String   @default("")        // JSON steps array
+  implementationResult String   @default("")        // JSON: { success, changes, summary }
+  notifyEmail          String   @default("")        // email to notify on completion
+  errorMessage         String   @default("")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   @@index([status])
   @@index([createdAt])
+  @@index([complexity])
 }
