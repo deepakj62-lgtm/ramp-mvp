@@ -1,38 +1,29 @@
 import { PrismaClient } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
 
-// On Vercel (Lambda), /var/task is read-only. Copy the bundled SQLite to /tmp
-// so all reads AND writes work. Data resets on each cold start (perfect for demos).
-function ensureWritableDb() {
-  if (process.env.NODE_ENV !== 'production') return;
+// In production: use Turso (persistent, serverless SQLite)
+// In development: use local SQLite file via DATABASE_URL
+function createPrismaClient() {
+  if (process.env.NODE_ENV === 'production' && process.env.TURSO_DATABASE_URL) {
+    // Turso connection for Vercel — persistent, survives cold starts
+    const { PrismaLibSQL } = require('@prisma/adapter-libsql');
+    const { createClient } = require('@libsql/client');
 
-  const tmpDb = '/tmp/ramp.db';
-  if (!fs.existsSync(tmpDb)) {
-    // The bundled db lives at prisma/db.sqlite (included via outputFileTracingIncludes)
-    const bundledDb = path.join(process.cwd(), 'prisma', 'db.sqlite');
-    try {
-      if (fs.existsSync(bundledDb)) {
-        fs.copyFileSync(bundledDb, tmpDb);
-        console.log('[db] Copied bundled SQLite → /tmp/ramp.db');
-      } else {
-        console.warn('[db] Bundled db not found at:', bundledDb);
-      }
-    } catch (err) {
-      console.error('[db] Failed to copy db to /tmp:', err);
-    }
+    const turso = createClient({
+      url: process.env.TURSO_DATABASE_URL!,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+
+    const adapter = new PrismaLibSQL(turso);
+    return new PrismaClient({ adapter, log: ['error'] } as any);
   }
-}
 
-ensureWritableDb();
+  // Local dev: plain SQLite
+  return new PrismaClient({ log: ['error'] });
+}
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ['error'],
-  });
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
